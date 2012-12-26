@@ -30,7 +30,13 @@ function runTest() {
 	} else {
 		var url = testFiles[testIndex],
 			origSource,
-			savedSource;
+			savedSource,
+			testli,
+			origImage,
+			savedImage,
+			canvas,
+			ctx,
+			imagesLoaded;
 
 		function fetchSvg() {
 			log('fetching ' + url);
@@ -63,14 +69,15 @@ function runTest() {
 			log('saving from editor...');
 			svgEditEmbed.getSvgString()(function(xml) {
 				savedSource = xml;
-				compareSvg();
+				renderSvg();
 			});
 		}
 
-		function compareSvg() {
-			log('comparing output...');
+		function renderSvg() {
+			log('rendering output...');
 			// Compare the saved output against the original
 			// string comparison hack
+			/*
 			if (origSource === savedSource) {
 				log("match");
 			} else {
@@ -78,6 +85,43 @@ function runTest() {
 				console.log(savedSource.substring(0, 80));
 				log("didn't match");
 			}
+			*/
+			var dataPrefix = 'data:image/svg+xml;charset=utf-8,';
+			origImage = new Image();
+			origImage.width = 300;
+			origImage.src = dataPrefix + encodeURIComponent(origSource);
+			savedImage = new Image();
+			savedImage.width = 300;
+			savedImage.src = dataPrefix + encodeURIComponent(savedSource);
+
+			testli = document.createElement('li');
+			testli.appendChild(origImage);
+			testli.appendChild(savedImage);
+			testResults.appendChild(testli);
+
+			imagesLoaded = 0;
+			origImage.addEventListener('load', checkAndCompareImages);
+			savedImage.addEventListener('load', checkAndCompareImages);
+		}
+		
+		function checkAndCompareImages() {
+			imagesLoaded++;
+			if (imagesLoaded >= 2) {
+				compareImages();
+			}
+		}
+
+		function compareImages() {
+			log('comparing output...');
+			canvas = document.createElement('canvas');
+			canvas.width = 300;
+			canvas.height = origImage.height;
+			testli.appendChild(canvas);
+
+			ctx = canvas.getContext('2d');
+			ctx.drawImage(origImage, 0, 0, origImage.width, origImage.height);
+			ctx.globalCompositeOperation = 'xor';
+			ctx.drawImage(savedImage, 0, 0, origImage.width, origImage.height);
 			nextTest();
 		}
 		
