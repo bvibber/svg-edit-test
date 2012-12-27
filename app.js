@@ -165,11 +165,11 @@ function diffImages(a, b) {
 	var i = 0;
 	for (var y = 0; y < height; y++) {
 		for (var x = 0; x < width; x++) {
-			data[i] = (dataA[i] - dataB[i]) & 0xff;
+			data[i] = Math.abs(dataA[i] - dataB[i]);
 			i++;
-			data[i] = (dataA[i] - dataB[i]) & 0xff;
+			data[i] = Math.abs(dataA[i] - dataB[i]);
 			i++;
-			data[i] = (dataA[i] - dataB[i]) & 0xff;
+			data[i] = Math.abs(dataA[i] - dataB[i]);
 			i++;
 			data[i] = 255; // opaque
 			i++;
