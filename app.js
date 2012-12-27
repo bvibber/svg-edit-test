@@ -5,7 +5,12 @@ var svgEditEmbed,
 	testResults;
 
 var testFiles = [
-	'https://upload.wikimedia.org/wikipedia/commons/f/ff/Derivative_Works_Decision_Tree_%28fr%29.svg'
+	'https://upload.wikimedia.org/wikipedia/commons/e/e5/Mpemba-simple.svg',
+	'https://upload.wikimedia.org/wikipedia/commons/3/31/Wheel_factorization-n%3D30.svg',
+	'https://upload.wikimedia.org/wikipedia/commons/8/89/1976_chromaticity_diagram.svg',
+	'https://upload.wikimedia.org/wikipedia/commons/1/18/Com2enwiki.svg',
+	'https://upload.wikimedia.org/wikipedia/commons/f/ff/Derivative_Works_Decision_Tree_%28fr%29.svg',
+	'https://upload.wikimedia.org/wikipedia/commons/8/81/Procamelus_evolution_es.svg'
 ];
 var testIndex = 0;
 
@@ -88,10 +93,10 @@ function runTest() {
 			*/
 			var dataPrefix = 'data:image/svg+xml;charset=utf-8,';
 			origImage = new Image();
-			origImage.width = 300;
+			origImage.width = 320;
 			origImage.src = dataPrefix + encodeURIComponent(origSource);
 			savedImage = new Image();
-			savedImage.width = 300;
+			savedImage.width = 320;
 			savedImage.src = dataPrefix + encodeURIComponent(savedSource);
 
 			testli = document.createElement('li');
@@ -113,6 +118,7 @@ function runTest() {
 
 		function compareImages() {
 			log('comparing output...');
+			/*
 			canvas = document.createElement('canvas');
 			canvas.width = origImage.width;
 			canvas.height = origImage.height;
@@ -128,6 +134,9 @@ function runTest() {
 			ctx.drawImage(origFlat, 0, 0);
 			ctx.globalCompositeOperation = 'xor';
 			ctx.drawImage(savedFlat, 0, 0);
+			*/
+			canvas = diffImages(origImage, savedImage, canvas);
+			testli.appendChild(canvas);
 			nextTest();
 		}
 		
@@ -140,6 +149,10 @@ function runTest() {
 	}
 }
 
+/**
+ * @param HTMLImageElement image
+ * @return HTMLCanvasElement
+ */
 function flatten(image) {
 	var canvas = document.createElement('canvas');
 	canvas.width = image.width;
@@ -149,6 +162,51 @@ function flatten(image) {
 	ctx.fillStyle = 'white';
 	ctx.fillRect(0, 0, canvas.width, canvas.height);
 	ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+	return canvas;
+}
+
+/**
+ * @param HTMLImageElement a
+ * @param HTMLImageElement b
+ * @return HTMLCanvasElement
+ */
+function diffImages(a, b) {
+	var canvasA = flatten(a),
+		canvasB = flatten(b),
+		width = a.width,
+		height = a.height;
+
+	var canvas = document.createElement('canvas');
+	canvas.width = width;
+	canvas.height = height;
+
+	var ctx = canvas.getContext('2d'),
+		ctxA = canvasA.getContext('2d'),
+		ctxB = canvasB.getContext('2d');
+	
+	var imageData = ctx.createImageData(width, height),
+		imageDataA = ctxA.getImageData(0, 0, width, height),
+		imageDataB = ctxB.getImageData(0, 0, width, height),
+		data = imageData.data,
+		dataA = imageDataA.data,
+		dataB = imageDataB.data;
+
+	var i = 0;
+	for (var y = 0; y < height; y++) {
+		for (var x = 0; x < width; x++) {
+			data[i] = (dataA[i] - dataB[i]) & 0xff;
+			i++;
+			data[i] = (dataA[i] - dataB[i]) & 0xff;
+			i++;
+			data[i] = (dataA[i] - dataB[i]) & 0xff;
+			i++;
+			data[i] = 255; // opaque
+			i++;
+		}
+	}
+	
+	ctx.putImageData(imageData, 0, 0);
+
 	return canvas;
 }
 
