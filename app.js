@@ -40,7 +40,6 @@ function runTest() {
 			origImage,
 			savedImage,
 			canvas,
-			ctx,
 			imagesLoaded;
 
 		function fetchSvg() {
@@ -80,17 +79,6 @@ function runTest() {
 
 		function renderSvg() {
 			log('rendering output...');
-			// Compare the saved output against the original
-			// string comparison hack
-			/*
-			if (origSource === savedSource) {
-				log("match");
-			} else {
-				console.log(origSource.substring(0, 80));
-				console.log(savedSource.substring(0, 80));
-				log("didn't match");
-			}
-			*/
 			var dataPrefix = 'data:image/svg+xml;charset=utf-8,';
 			origImage = new Image();
 			origImage.width = 320;
@@ -118,23 +106,6 @@ function runTest() {
 
 		function compareImages() {
 			log('comparing output...');
-			/*
-			canvas = document.createElement('canvas');
-			canvas.width = origImage.width;
-			canvas.height = origImage.height;
-			testli.appendChild(canvas);
-			
-			var origFlat = flatten(origImage);
-			var savedFlat = flatten(savedImage);
-			
-			testli.appendChild(origFlat);
-			testli.appendChild(savedFlat);
-
-			ctx = canvas.getContext('2d');
-			ctx.drawImage(origFlat, 0, 0);
-			ctx.globalCompositeOperation = 'xor';
-			ctx.drawImage(savedFlat, 0, 0);
-			*/
 			canvas = diffImages(origImage, savedImage, canvas);
 			testli.appendChild(canvas);
 			nextTest();
