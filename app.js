@@ -114,14 +114,20 @@ function runTest() {
 		function compareImages() {
 			log('comparing output...');
 			canvas = document.createElement('canvas');
-			canvas.width = 300;
+			canvas.width = origImage.width;
 			canvas.height = origImage.height;
 			testli.appendChild(canvas);
+			
+			var origFlat = flatten(origImage);
+			var savedFlat = flatten(savedImage);
+			
+			testli.appendChild(origFlat);
+			testli.appendChild(savedFlat);
 
 			ctx = canvas.getContext('2d');
-			ctx.drawImage(origImage, 0, 0, origImage.width, origImage.height);
+			ctx.drawImage(origFlat, 0, 0);
 			ctx.globalCompositeOperation = 'xor';
-			ctx.drawImage(savedImage, 0, 0, origImage.width, origImage.height);
+			ctx.drawImage(savedFlat, 0, 0);
 			nextTest();
 		}
 		
@@ -132,6 +138,18 @@ function runTest() {
 		
 		fetchSvg();
 	}
+}
+
+function flatten(image) {
+	var canvas = document.createElement('canvas');
+	canvas.width = image.width;
+	canvas.height = image.height;
+
+	var ctx = canvas.getContext('2d');
+	ctx.fillStyle = 'white';
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+	return canvas;
 }
 
 function testsComplete() {
