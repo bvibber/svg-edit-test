@@ -106,8 +106,12 @@ function runTest() {
 
 		function compareImages() {
 			log('comparing output...');
-			canvas = diffImages(origImage, savedImage, canvas);
-			testli.appendChild(canvas);
+			try {
+				canvas = diffImages(origImage, savedImage, canvas);
+				testli.appendChild(canvas);
+			} catch (e) {
+				log('BROWSER DOES NOT ALLOW PIXEL ACCESS');
+			}
 			nextTest();
 		}
 		
