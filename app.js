@@ -4,15 +4,8 @@ var svgEditEmbed,
 	svgEditFrame,
 	testResults;
 
-var testFiles = [
-	'https://upload.wikimedia.org/wikipedia/commons/e/e5/Mpemba-simple.svg',
-	'https://upload.wikimedia.org/wikipedia/commons/3/31/Wheel_factorization-n%3D30.svg',
-	'https://upload.wikimedia.org/wikipedia/commons/8/89/1976_chromaticity_diagram.svg',
-	'https://upload.wikimedia.org/wikipedia/commons/1/18/Com2enwiki.svg',
-	'https://upload.wikimedia.org/wikipedia/commons/f/ff/Derivative_Works_Decision_Tree_%28fr%29.svg',
-	'https://upload.wikimedia.org/wikipedia/commons/8/81/Procamelus_evolution_es.svg'
-];
-var testIndex = 0;
+var testIndex = 0,
+	maxTests = 10;
 
 function log(data) {
 	console.log(data);
@@ -30,10 +23,11 @@ function init() {
 }
 
 function runTest() {
-	if (testIndex >= testFiles.length) {
+	if (testIndex >= maxTests) {
 		testsComplete();
 	} else {
-		var url = testFiles[testIndex],
+		var imageTitle,
+			url,
 			origSource,
 			savedSource,
 			testli,
@@ -42,6 +36,56 @@ function runTest() {
 			canvas,
 			imagesLoaded;
 
+		function getRandomSvg() {
+			// http://commons.wikimedia.org/w/api.php?action=query&list=random&rnnamespace=6&rnlimit=10&format=json
+			commonsApi({
+				action: 'query',
+				list: 'random',
+				rnnamespace: 6, // NS_FILE
+				rnlimit: 10
+			}, function(data) {
+				var random = data.query.random;
+				for (var i = 0; i < random.length; i++) {
+					var page = random[i];
+					if (page.title.match(/\.svg$/i)) {
+						// Found an SVG!
+						imageTitle = page.title;
+						log('got random SVG ' + imageTitle);
+						break;
+					}
+				}
+				if (imageTitle === undefined) {
+					// no SVGs in this set, try again
+					getRandomSvg();
+				} else {
+					getSvgUrl();
+				}
+			});
+		}
+
+		function getSvgUrl() {
+			// http://commons.wikimedia.org/w/api.php?action=query&titles=File:Albert%20Einstein%20Head.jpg&prop=imageinfo&iiprop=url&format=json
+			commonsApi({
+				action: 'query',
+				titles: imageTitle,
+				prop: 'imageinfo',
+				iiprop: 'url'
+			}, function(data) {
+				var pages = data.query.pages,
+					pages;
+				for (var pageId in pages) {
+					page = pages[pageId];
+					break;
+				}
+				if (page === undefined) {
+					throw new Error("kaboom, no imageinfo");
+				}
+				console.log(page);
+				url = page.imageinfo[0].url;
+				fetchSvg();
+			});
+		}
+		
 		function fetchSvg() {
 			log('fetching ' + url);
 			var xhr = new XMLHttpRequest();
@@ -120,7 +164,7 @@ function runTest() {
 			runTest();
 		}
 		
-		fetchSvg();
+		getRandomSvg();
 	}
 }
 
@@ -183,6 +227,40 @@ function diffImages(a, b) {
 	ctx.putImageData(imageData, 0, 0);
 
 	return canvas;
+}
+
+/**
+ * Call MediaWiki API on Wikimedia Commons with given parameters.
+ * Returns JSON results.
+ *
+ * @param object params
+ * @param function callback
+ */
+function commonsApi(params, callback) {
+	var url = 'https://commons.wikimedia.org/w/api.php?format=json';
+	for (var i in params) {
+		url = url + '&' + i + '=' + encodeURIComponent(params[i]);
+	}
+	callJsonP(url, callback);
+}
+
+/**
+ * JSONP call wrapper, as Commons API isn't CORS-ed out yet
+ */
+function callJsonP(url, callback) {
+	var script = document.createElement('script'),
+		tempName = 'jsonp_' + ('' + Math.random()).replace('0.', '');
+
+	window[tempName] = function(data) {
+		console.log(tempName + ' triggered!');
+		console.log(data);
+		window[tempName] = undefined;
+		script.parentNode.removeChild(script);
+		callback(data);
+	};
+
+	script.src = url + '&callback=' + tempName;
+	document.getElementsByTagName('head')[0].appendChild(script);
 }
 
 function testsComplete() {
