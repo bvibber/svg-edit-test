@@ -126,14 +126,16 @@ function runTest() {
 			var dataPrefix = 'data:image/svg+xml;charset=utf-8,';
 			origImage = new Image();
 			origImage.width = 320;
+			origImage.height = 320;
 			origImage.src = dataPrefix + encodeURIComponent(origSource);
 			savedImage = new Image();
 			savedImage.width = 320;
+			savedImage.height = 320;
 			savedImage.src = dataPrefix + encodeURIComponent(savedSource);
 
 			testli = document.createElement('li');
-			testli.appendChild(origImage);
-			testli.appendChild(savedImage);
+			//testli.appendChild(origImage);
+			//testli.appendChild(savedImage);
 			testResults.appendChild(testli);
 
 			imagesLoaded = 0;
@@ -150,11 +152,26 @@ function runTest() {
 
 		function compareImages() {
 			log('comparing output...');
+			if (!origImage.complete) {
+				log('A is incomplete');
+			}
+			if (!savedImage.complete) {
+				log('B is incomplete');
+			}
 			try {
-				canvas = diffImages(origImage, savedImage, canvas);
-				testli.appendChild(canvas);
+				var data = diffImages(origImage, savedImage, canvas);
+				log('difference score: ' + data.diff);
+				if (data.canvasA) {
+					testli.appendChild(data.canvasA);
+				}
+				if (data.canvasB) {
+					testli.appendChild(data.canvasB);
+				}
+				if (data.canvas) {
+					testli.appendChild(data.canvas);
+				}
 			} catch (e) {
-				log('BROWSER DOES NOT ALLOW PIXEL ACCESS');
+				log(e.toString());
 			}
 			nextTest();
 		}
@@ -187,13 +204,32 @@ function flatten(image) {
 /**
  * @param HTMLImageElement a
  * @param HTMLImageElement b
- * @return HTMLCanvasElement
+ * @return {diff: number, canvas: HTMLCanvasElement}
  */
 function diffImages(a, b) {
-	var canvasA = flatten(a),
-		canvasB = flatten(b),
+	var canvasA,
+		canvasB,
 		width = a.width,
-		height = a.height;
+		height = a.height,
+		diff = 0;
+	try {
+		canvasA = flatten(a);
+	} catch (e) {
+		log("Can't drawImage with A: " + e.toString());
+	}
+	try {
+		canvasB = flatten(b);
+	} catch (e) {
+		log("Can't drawImage with B: " + e.toString());
+	}
+	if (!canvasA || !canvasB) {
+		return {
+			diff: -1,
+			canvasA: canvasA,
+			canvasB: canvasB,
+			canvas: canvas
+		};
+	}
 
 	var canvas = document.createElement('canvas');
 	canvas.width = width;
@@ -203,30 +239,53 @@ function diffImages(a, b) {
 		ctxA = canvasA.getContext('2d'),
 		ctxB = canvasB.getContext('2d');
 	
-	var imageData = ctx.createImageData(width, height),
-		imageDataA = ctxA.getImageData(0, 0, width, height),
-		imageDataB = ctxB.getImageData(0, 0, width, height),
-		data = imageData.data,
-		dataA = imageDataA.data,
-		dataB = imageDataB.data;
+	var imageData = ctx.createImageData(width, height);
+	try {
+		var imageDataA = ctxA.getImageData(0, 0, width, height);
+	} catch (e) {
+		log("Can't getImageData from A: " + e.toString());
+	}
+	try {
+		var imageDataB = ctxB.getImageData(0, 0, width, height);
+	} catch (e) {
+		log("Can't getImageData from B: " + e.toString());
+	}
 
-	var i = 0;
-	for (var y = 0; y < height; y++) {
-		for (var x = 0; x < width; x++) {
-			data[i] = Math.abs(dataA[i] - dataB[i]);
-			i++;
-			data[i] = Math.abs(dataA[i] - dataB[i]);
-			i++;
-			data[i] = Math.abs(dataA[i] - dataB[i]);
-			i++;
-			data[i] = 255; // opaque
-			i++;
+	if (imageData && imageDataA && imageDataB) {
+		var data = imageData.data,
+			dataA = imageDataA.data,
+			dataB = imageDataB.data,
+			i = 0,
+			delta = 0,
+			abs = Math.abs;
+		for (var y = 0; y < height; y++) {
+			for (var x = 0; x < width; x++) {
+				delta = abs(dataA[i] - dataB[i]);
+				diff += delta;
+				data[i] = delta;
+				i++;
+				delta = abs(dataA[i] - dataB[i]);
+				diff += delta;
+				data[i] = delta;
+				i++;
+				delta = abs(dataA[i] - dataB[i]);
+				diff += delta;
+				data[i] = delta;
+				i++;
+				data[i] = 255; // opaque
+				i++;
+			}
 		}
 	}
 	
 	ctx.putImageData(imageData, 0, 0);
 
-	return canvas;
+	return {
+		diff: diff,
+		canvasA: canvasA,
+		canvasB: canvasB,
+		canvas: canvas
+	};
 }
 
 /**
@@ -265,6 +324,7 @@ function callJsonP(url, callback) {
 
 function testsComplete() {
 	log('finished.');
+	svgEditFrame.parentNode.removeChild(svgEditFrame);
 }
 
 
