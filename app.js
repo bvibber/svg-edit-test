@@ -80,7 +80,6 @@ function runTest() {
 				if (page === undefined) {
 					throw new Error("kaboom, no imageinfo");
 				}
-				console.log(page);
 				url = page.imageinfo[0].url;
 				fetchSvg();
 			});
@@ -134,8 +133,6 @@ function runTest() {
 			savedImage.src = dataPrefix + encodeURIComponent(savedSource);
 
 			testli = document.createElement('li');
-			//testli.appendChild(origImage);
-			//testli.appendChild(savedImage);
 			testResults.appendChild(testli);
 
 			imagesLoaded = 0;
@@ -152,26 +149,24 @@ function runTest() {
 
 		function compareImages() {
 			log('comparing output...');
-			if (!origImage.complete) {
-				log('A is incomplete');
-			}
-			if (!savedImage.complete) {
-				log('B is incomplete');
-			}
 			try {
-				var data = diffImages(origImage, savedImage, canvas);
-				log('difference score: ' + data.diff);
-				if (data.canvasA) {
-					testli.appendChild(data.canvasA);
-				}
-				if (data.canvasB) {
-					testli.appendChild(data.canvasB);
-				}
-				if (data.canvas) {
-					testli.appendChild(data.canvas);
-				}
+				var canvasA = flatten(origImage);
+				testli.appendChild(canvasA);
 			} catch (e) {
-				log(e.toString());
+				log("Can't render original image");
+			}
+
+			try {
+				var canvasB = flatten(savedImage);
+				testli.appendChild(canvasB);
+			} catch (e) {
+				log("Can't render saved image");
+			}
+
+			if (canvasA && canvasB) {
+				var data = diffCanvases(canvasA, canvasB);
+				log('difference score: ' + data.diff);
+				testli.appendChild(data.canvas);
 			}
 			nextTest();
 		}
@@ -202,34 +197,14 @@ function flatten(image) {
 }
 
 /**
- * @param HTMLImageElement a
- * @param HTMLImageElement b
+ * @param HTMLCanvasElement canvasA
+ * @param HTMLCanvasElement canvasB
  * @return {diff: number, canvas: HTMLCanvasElement}
  */
-function diffImages(a, b) {
-	var canvasA,
-		canvasB,
-		width = a.width,
-		height = a.height,
+function diffCanvases(canvasA, canvasB) {
+	var width = canvasA.width,
+		height = canvasA.height,
 		diff = 0;
-	try {
-		canvasA = flatten(a);
-	} catch (e) {
-		log("Can't drawImage with A: " + e.toString());
-	}
-	try {
-		canvasB = flatten(b);
-	} catch (e) {
-		log("Can't drawImage with B: " + e.toString());
-	}
-	if (!canvasA || !canvasB) {
-		return {
-			diff: -1,
-			canvasA: canvasA,
-			canvasB: canvasB,
-			canvas: canvas
-		};
-	}
 
 	var canvas = document.createElement('canvas');
 	canvas.width = width;
@@ -282,8 +257,6 @@ function diffImages(a, b) {
 
 	return {
 		diff: diff,
-		canvasA: canvasA,
-		canvasB: canvasB,
 		canvas: canvas
 	};
 }
@@ -311,8 +284,6 @@ function callJsonP(url, callback) {
 		tempName = 'jsonp_' + ('' + Math.random()).replace('0.', '');
 
 	window[tempName] = function(data) {
-		console.log(tempName + ' triggered!');
-		console.log(data);
 		window[tempName] = undefined;
 		script.parentNode.removeChild(script);
 		callback(data);
