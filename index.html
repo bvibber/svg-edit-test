@@ -1,10 +1,17 @@
 <!DOCTYPE html>
 <html>
 	<head>
-		<title>SVG-Edit round-trip test suite</title>
+		<title>SVG-edit round-trip test suite</title>
 		<script src="http://svg-edit.googlecode.com/svn/trunk/editor/embedapi.js"></script>
 
 	<body>
+		<h1> A round-trip test suite for <a href="https://code.google.com/p/svg-edit/">SVG-edit</a>, to test SVG images from <a href="https://commons.wikimedia.org/">Wikimedia Commons</a></h1>
+		<p> Please see the <a href="https://groups.google.com/d/topic/svg-edit/SfTVM4OPXiA/discussion">SVG-edit round-trip test suite discussion</a> as part of the <a href="https://code.google.com/p/svg-edit/wiki/Wikipedia">larger goal of getting SVG-edit used on Wikipedia<a/>.
+		<br/>
+		<br/>
+		Use with Firefox and be patient for the page to fully load all the test images. In the image output, the first image is the original SVG loaded from Wikimedia Commons, the second is the file as loaded into and then saved from SVG-Edit running in an iframe, and the third is a diff produced by drawing the SVGs onto canvas elements, then subtracting one from the other in raw pixel manipulation. This shows up areas that differ very visibly. A fully black box and a <i>difference score</i> of 0 means success.</p>
+	
+	
 		<ul id="test-results"></ul>
 		<iframe id="svg-edit-frame" src="http://svg-edit.googlecode.com/svn/trunk/editor/svg-editor.html" width=1024 height=768></iframe>
 
